@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Climate Forecaster | ARIMA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            min-height: 100vh;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="text-slate-200 font-sans p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <header class="mb-12 text-center">
+            <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 mb-2">
+                Climate Intelligence Dashboard
+            </h1>
+            <p class="text-slate-400">Hybrid ARIMA-LLM Forecasting System</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <div class="md:col-span-1 space-y-6">
+                <div class="glass p-6 rounded-3xl">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center">
+                        <i class="fas fa-robot mr-2 text-blue-400"></i> Ask AI Assistant
+                    </h2>
+                    <div class="space-y-4">
+                        <textarea id="userInput" rows="3" 
+                            class="w-full bg-slate-800/50 border border-slate-700 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                            placeholder="e.g., 'What will the weather be like in London tomorrow?'"></textarea>
+                        
+                        <button onclick="getPrediction()" id="predictBtn"
+                            class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 py-3 rounded-2xl font-bold transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg">
+                            Analyze & Predict
+                        </button>
+                    </div>
+                </div>
+
+                <div class="glass p-6 rounded-3xl">
+                    <h3 class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">Model Status</h3>
+                    <div class="flex items-center space-x-2 text-sm">
+                        <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                        <span class="text-emerald-400">ARIMA v1.2 Online</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="md:col-span-2">
+                <div id="resultsCard" class="glass p-8 rounded-3xl min-h-[400px] flex flex-col justify-center border-emerald-500/20">
+                    <div id="loading" class="hidden text-center">
+                        <div class="animate-spin text-4xl mb-4 text-blue-400"><i class="fas fa-circle-notch"></i></div>
+                        <p class="text-slate-400">Consulting LLM and fetching OpenWeather API data...</p>
+                    </div>
+
+                    <div id="placeholder" class="text-center">
+                        <div class="text-6xl text-slate-700 mb-4"><i class="fas fa-cloud-sun"></i></div>
+                        <p class="text-slate-500 text-lg italic">Awaiting location input to run prediction...</p>
+                    </div>
+
+                    <div id="predictionContent" class="hidden">
+                        <div class="flex justify-between items-start mb-8">
+                            <div>
+                                <h2 id="resCity" class="text-3xl font-bold">---</h2>
+                                <p id="resDate" class="text-blue-400 font-medium uppercase tracking-widest text-sm">---</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full text-xs font-bold border border-blue-500/30">PREDICTED TEMP</span>
+                            </div>
+                        </div>
+
+                        <div class="text-7xl font-black mb-8 text-white">
+                            <span id="resTemp">--</span>°C
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 mb-8">
+                            <div class="bg-slate-800/40 p-4 rounded-2xl border border-slate-700">
+                                <p class="text-slate-500 text-xs mb-1 uppercase font-bold">Dew Point</p>
+                                <p id="resDew" class="text-lg font-semibold">--</p>
+                            </div>
+                            <div class="bg-slate-800/40 p-4 rounded-2xl border border-slate-700">
+                                <p class="text-slate-500 text-xs mb-1 uppercase font-bold">Relative Humidity</p>
+                                <p id="resHum" class="text-lg font-semibold">--</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-600/10 border border-blue-500/20 p-4 rounded-2xl italic text-sm text-slate-300">
+                            <i class="fas fa-quote-left text-blue-500 mr-2"></i>
+                            <span id="resMessage">AI summary will appear here.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function getPrediction() {
+            const message = document.getElementById('userInput').value;
+            if (!message) return alert("Please enter a question.");
+
+            const btn = document.getElementById('predictBtn');
+            const placeholder = document.getElementById('placeholder');
+            const loading = document.getElementById('loading');
+            const content = document.getElementById('predictionContent');
+
+            // UI State Change
+            btn.disabled = true;
+            placeholder.classList.add('hidden');
+            loading.classList.remove('hidden');
+            content.classList.add('hidden');
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message })
+                });
+                
+                const data = await response.json();
+
+                // Populate Data
+                document.getElementById('resCity').innerText = data.city;
+                document.getElementById('resDate').innerText = data.date;
+                document.getElementById('resTemp').innerText = data.predicted_temp_c;
+                document.getElementById('resDew').innerText = data.input_features["Dew Point Temp_C"].toFixed(1) + "°C";
+                document.getElementById('resHum').innerText = data.input_features["Rel Hum_%"] + "%";
+                document.getElementById('resMessage').innerText = data.message;
+
+                // Show Content
+                loading.classList.add('hidden');
+                content.classList.remove('hidden');
+            } catch (error) {
+                alert("Error connecting to server.");
+                placeholder.classList.remove('hidden');
+                loading.classList.add('hidden');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
