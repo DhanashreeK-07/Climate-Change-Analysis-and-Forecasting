@@ -9,7 +9,7 @@ from flask import Flask, request, jsonify, render_template
 app = Flask(__name__)
 
 # --- CONFIGURATION ---
-# Replace with your actual key
+
 OPENWEATHER_API_KEY = "d4360e87e7adad8f9fb51783dfd4ec82" 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 
@@ -19,9 +19,9 @@ try:
         model_fit = pickle.load(f)
     with open('features.pkl', 'rb') as f:
         model_features = pickle.load(f)
-    print("✅ Model and Features loaded successfully.")
+    print(" Model and Features loaded successfully.")
 except Exception as e:
-    print(f"❌ Initialization Error: {e}")
+    print(f" Initialization Error: {e}")
 
 # --- ROUTES ---
 
@@ -79,7 +79,7 @@ def predict_weather():
         })
 
     except Exception as e:
-        print(f"❌ Prediction Error: {e}")
+        print(f"Prediction Error: {e}")
         return jsonify({"error": str(e)}), 500
 
 # --- HELPER FUNCTIONS ---
@@ -144,4 +144,5 @@ def get_live_weather(city):
 
 if __name__ == '__main__':
     # Running on port 5000 with debug enabled for development
+
     app.run(debug=True, port=5000)
