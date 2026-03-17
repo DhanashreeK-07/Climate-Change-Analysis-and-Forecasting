@@ -4,7 +4,7 @@ A hybrid forecasting system combining **ARIMA/SARIMAX** statistical models with 
 ## 🚀 Features
 - **LLM Intent Extraction**: Uses Ollama (Llama 3) to parse natural language queries into structured data.
 - **Dynamic Weather Integration**: Fetches real-time humidity, pressure, and dew points via OpenWeather API.
-- **Advanced Forecasting**: Leverages a trained ARIMA model for temperature prediction based on historical trends.
+- **Advanced Forecasting**: Leverages a trained SARIMAX model for temperature prediction based on historical trends.
 - **Responsive UI**: Glassmorphism-style dashboard built with Tailwind CSS.
 
 ---
