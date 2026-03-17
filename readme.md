@@ -1,5 +1,5 @@
 # 🌦️ AI Climate Intelligence Dashboard
-A hybrid forecasting system combining **ARIMA/SARIMAX** statistical models with **Large Language Models (LLMs)** and real-time atmospheric data from OpenWeather.
+A hybrid forecasting system using **SARIMAX** statistical models with **Large Language Models (LLMs)** and real-time atmospheric data from OpenWeather.
 
 ## 🚀 Features
 - **LLM Intent Extraction**: Uses Ollama (Llama 3) to parse natural language queries into structured data.
