@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 # --- CONFIGURATION ---
 
-OPENWEATHER_API_KEY = "d4360e87e7adad8f9fb51783dfd4ec82" 
+OPENWEATHER_API_KEY = "XXXXXXXXX" 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 
 # --- LOAD ASSETS ---
