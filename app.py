@@ -1,3 +1,4 @@
+import os
 import json
 import pickle
 import requests
@@ -5,13 +6,19 @@ import datetime
 import numpy as np
 import pandas as pd
 from flask import Flask, request, jsonify, render_template
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
 
 # --- CONFIGURATION ---
+OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
 
-OPENWEATHER_API_KEY = "XXXXXXXXX" 
-OLLAMA_URL = "http://localhost:11434/api/generate"
+if not OPENWEATHER_API_KEY:
+    print("⚠️ WARNING: OPENWEATHER_API_KEY is missing from the .env file.")
 
 # --- LOAD ASSETS ---
 try:
@@ -19,9 +26,9 @@ try:
         model_fit = pickle.load(f)
     with open('features.pkl', 'rb') as f:
         model_features = pickle.load(f)
-    print(" Model and Features loaded successfully.")
+    print("✅ Model and Features loaded successfully.")
 except Exception as e:
-    print(f" Initialization Error: {e}")
+    print(f"❌ Initialization Error: {e}")
 
 # --- ROUTES ---
 
@@ -49,22 +56,20 @@ def predict_weather():
             return jsonify({"error": f"Could not find weather data for '{city}'"}), 404
 
         # 3. Prepare Features for the ARIMA Model
-        # We need to match the exact column order used during training
         exog_df = pd.DataFrame([live_data])
         
         # Identify columns model expects (everything in features.pkl except target)
         required_exog_cols = [c for c in model_features if c != 'Temp_C']
         
-        # Handle multi-valued weather dummies (Fog, Snow, etc.)
+        # Handle multi-valued weather dummies
         for col in required_exog_cols:
             if col not in exog_df.columns:
-                exog_df[col] = 0 # Assume the weather condition is absent (0)
+                exog_df[col] = 0 
         
         # Reorder and filter columns
         exog_input = exog_df[required_exog_cols]
 
         # 4. Predict using the ARIMA pkl file
-        # Using .iloc[0] to handle position-based indexing correctly
         forecast = model_fit.forecast(steps=1, exog=exog_input)
         predicted_temp = forecast.iloc[0] 
 
@@ -85,7 +90,7 @@ def predict_weather():
 # --- HELPER FUNCTIONS ---
 
 def extract_intent_with_llm(user_input):
-    """Uses Ollama to parse chat. Includes today's date so it can resolve 'tomorrow'."""
+    """Uses Ollama to parse chat. Includes today's date so it can resolve relative dates."""
     today_str = datetime.date.today().strftime("%B %d, %Y")
     
     prompt = f"""
@@ -110,9 +115,8 @@ def extract_intent_with_llm(user_input):
         res_text = response.json().get('response', '{}').strip()
         parsed = json.loads(res_text)
 
-        # Basic validation if city is missing
+        # Basic validation and fallback for missing/unknown city
         if not parsed.get("city") or parsed["city"].lower() == "unknown":
-            # Simple keyword extraction as fallback
             words = user_input.split()
             if "in" in words:
                 parsed["city"] = words[words.index("in") + 1].strip("?.!")
@@ -123,6 +127,10 @@ def extract_intent_with_llm(user_input):
 
 def get_live_weather(city):
     """Fetches weather data from OpenWeather and calculates derived features."""
+    if not OPENWEATHER_API_KEY:
+        print("Error: API Key is missing.")
+        return None
+
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={OPENWEATHER_API_KEY}&units=metric"
     try:
         res = requests.get(url, timeout=5).json()
@@ -131,7 +139,6 @@ def get_live_weather(city):
         temp = res['main']['temp']
         rh = res['main']['humidity']
         
-        # Match features to the dataset's specific column names
         return {
             "Dew Point Temp_C": temp - ((100 - rh) / 5), # Approx formula
             "Rel Hum_%": rh,
@@ -143,6 +150,4 @@ def get_live_weather(city):
         return None
 
 if __name__ == '__main__':
-    # Running on port 5000 with debug enabled for development
-
     app.run(debug=True, port=5000)
