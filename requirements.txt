@@ -1,5 +1,7 @@
 Flask
 pandas
 numpy
-statsmodels
 requests
+python-dotenv
+tensorflow
+scikit-learn
