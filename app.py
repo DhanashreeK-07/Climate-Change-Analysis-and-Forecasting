@@ -22,7 +22,7 @@ if not OPENWEATHER_API_KEY:
 
 # --- LOAD ASSETS ---
 try:
-    with open('arima_model.pkl', 'rb') as f:
+    with open('weather_sarimax_model.pkl', 'rb') as f:
         model_fit = pickle.load(f)
     with open('features.pkl', 'rb') as f:
         model_features = pickle.load(f)
